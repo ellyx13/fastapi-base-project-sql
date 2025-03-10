@@ -1,27 +1,44 @@
-# Use an official lightweight Python image.
-FROM python:3.12-alpine
+# ==========================
+# Builder Stage
+# ==========================
+FROM python:3.12-slim-bookworm AS builder
 
-# Set the working directory.
 WORKDIR /opt/projects/app
 
-# Set environment variables to prevent Python from writing pyc files to disk
-# and ensure that Python output is logged directly to the terminal.
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install system dependencies
-RUN apk add --no-cache curl \
-    && apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev openssl-dev python3-dev build-base \
-    && pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && rm -rf /root/.cache/pip
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc python3-dev build-essential \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file and install Python dependencies.
-# Use --no-cache-dir to prevent pip from saving the cache, which reduces image size.
-# After installing Python dependencies, remove the build dependencies to reduce the final image size (apk del .build-deps).
-# This is important because some dependencies are only needed for building wheel files and are not necessary afterwards.
+# Upgrade pip and install Python dependencies in a virtual environment
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    && apk del .build-deps
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip setuptools wheel \
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application.
+# ==========================
+# Final Stage
+# ==========================
+FROM python:3.12-slim-bookworm
+
+WORKDIR /opt/projects/app
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Install runtime dependencies (only libpq-dev needed for PostgreSQL)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Set virtual environment path
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy application code
 COPY . .
