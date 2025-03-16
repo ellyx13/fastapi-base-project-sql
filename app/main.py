@@ -13,14 +13,13 @@ from loguru import logger
 from middlewares.v1.log import LogMiddleware
 from routers import api_routers
 from users.services import user_services
+from db.engine import app_engine
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create default admin user
-    await user_services.create_admin()
+    app_engine.create_db_and_tables()
     yield
-    await app_engine.close_connection()
 
 
 app = FastAPI(

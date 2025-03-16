@@ -1,25 +1,18 @@
-from loguru import logger
-from motor.motor_asyncio import AsyncIOMotorClient
-
+from sqlmodel import SQLModel, create_engine
 from .config import settings
 
-
 class Engine(object):
-    def __init__(self, database_url, database_name) -> None:
-        self.database_driver = AsyncIOMotorClient(database_url)
-        self.driver = self.database_driver[database_name]
+    def __init__(self, database_url) -> None:
+        self.database_url = database_url
+        self.db_engine = create_engine(database_url)
+        
+    def create_db_and_tables(self):  
+        SQLModel.metadata.create_all(self.db_engine)  
 
-    def get_database(self):
-        return self.driver
-
-    def __new__(cls, database_url, database_name: str):
+    def __new__(cls, database_url):
         if not hasattr(cls, "instance"):
             cls.instance = super(Engine, cls).__new__(cls)
         return cls.instance
 
-    async def close_connection(self):
-        logger.info("Closing database connection")
-        self.database_driver.close
 
-
-app_engine = Engine(database_url=settings.database_url, database_name=settings.app_database_name)
+app_engine = Engine(database_url=settings.database_url)
