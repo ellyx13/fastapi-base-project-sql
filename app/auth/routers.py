@@ -1,5 +1,5 @@
 from auth.decoractor import access_control
-from core.schemas import CommonsDependencies
+from core.dependencies import CommonsDependencies
 from fastapi import Depends
 from fastapi_restful.cbv import cbv
 from fastapi_restful.inferring_router import InferringRouter
@@ -20,11 +20,11 @@ class RoutersCBV:
     @router.post("/auth/register", status_code=201, responses={201: {"model": schemas.LoginResponse, "description": "Register user success"}})
     @access_control(public=True)
     async def register(self, data: schemas.RegisterRequest):
-        result = await auth_controllers.register_user(data=data)
+        result = await auth_controllers.register_user(data=data, commons=self.commons)
         return schemas.LoginResponse(**result)
 
     @router.post("/auth/login", status_code=201, responses={201: {"model": schemas.LoginResponse, "description": "Register user success"}})
     @access_control(public=True)
     async def login(self, data: schemas.LoginRequest):
-        result = await auth_controllers.login_user(data=data)
+        result = await auth_controllers.login_user(data=data, commons=self.commons)
         return schemas.LoginResponse(**result)

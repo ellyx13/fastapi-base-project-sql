@@ -9,7 +9,7 @@ class Response(BaseModel):
     id: str = Field(alias="_id")
     fullname: str
     email: EmailStr
-    phone: Optional[PhoneStr] = None
+    phone_number: Optional[PhoneStr] = None
     type: str
     created_at: datetime
     created_by: str
@@ -29,4 +29,4 @@ class LoginResponse(Response):
 
 class EditRequest(BaseModel):
     fullname: Optional[str] = None
-    phone: Optional[PhoneStr] = None
+    phone_number: Optional[PhoneStr] = None

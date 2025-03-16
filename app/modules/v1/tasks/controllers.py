@@ -1,5 +1,5 @@
 from core.controllers import BaseControllers
-from core.schemas import CommonsDependencies
+from core.dependencies import CommonsDependencies
 from core.services import BaseServices
 
 from . import schemas

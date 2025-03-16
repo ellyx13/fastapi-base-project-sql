@@ -1,10 +1,9 @@
 import pytest
-from bson import ObjectId
 from db.base import BaseCRUD
-from db.engine import app_engine
+from db.engine import db_engine
 
 collection_name = "test"
-base_crud = BaseCRUD(database_engine=app_engine, collection=collection_name)
+base_crud = BaseCRUD(database_engine=db_engine, collection=collection_name)
 
 
 # ------------- Testing the Constructor and set_collection method ------------ #
@@ -55,14 +54,6 @@ async def test_count_documents():
 
     count = await base_crud.count_documents(query={"name": "Not Found"})
     assert count == 0
-
-
-# ------------------------ Testing Document Conversion ----------------------- #
-@pytest.mark.asyncio(scope="session")
-async def test_convert_object_id_to_string():
-    document = {"_id": ObjectId()}
-    result = await base_crud.convert_object_id_to_string(document=document)
-    assert isinstance(result["_id"], str)
 
 
 # ------------------------- Testing Field Projection ------------------------- #

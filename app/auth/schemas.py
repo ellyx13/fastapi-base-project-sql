@@ -10,7 +10,7 @@ from users.exceptions import UserErrorCode
 class RegisterRequest(BaseModel):
     fullname: str
     email: EmailStr
-    phone: Optional[PhoneStr] = None
+    phone_number: Optional[PhoneStr] = None
     password: str
 
     @field_validator("password")

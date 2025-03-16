@@ -1,7 +1,7 @@
 import functools
 from typing import Any, Callable
-
-from core.schemas import CommonsDependencies
+from sqlalchemy.ext.asyncio import AsyncSession
+from core.dependencies import CommonsDependencies
 from utils import value
 
 from .exceptions import AuthErrorCode

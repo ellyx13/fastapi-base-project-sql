@@ -1,5 +1,6 @@
 from auth.decoractor import access_control
-from core.schemas import CommonsDependencies, ObjectIdStr, PaginationParams
+from core.dependencies import CommonsDependencies
+from core.schemas import ObjectIdStr, PaginationParams
 from fastapi import Depends
 from fastapi_restful.cbv import cbv
 from fastapi_restful.inferring_router import InferringRouter

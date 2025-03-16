@@ -2,7 +2,7 @@ import sys
 from contextlib import asynccontextmanager
 
 from config import settings
-from db.engine import app_engine
+from db.engine import db_engine
 from exceptions import CustomException
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,12 +13,14 @@ from loguru import logger
 from middlewares.v1.log import LogMiddleware
 from routers import api_routers
 from users.services import user_services
-from db.engine import app_engine
+from db.engine import db_engine
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app_engine.create_db_and_tables()
+    await db_engine.create_db_and_tables()
+    async for session in db_engine.get_session():
+        await user_services.create_admin(session=session)
     yield
 
 

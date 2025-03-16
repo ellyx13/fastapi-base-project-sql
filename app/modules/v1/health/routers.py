@@ -1,5 +1,5 @@
 from auth.decoractor import access_control
-from core.schemas import CommonsDependencies
+from core.dependencies import CommonsDependencies
 from fastapi import Depends
 from fastapi_restful.cbv import cbv
 from fastapi_restful.inferring_router import InferringRouter
