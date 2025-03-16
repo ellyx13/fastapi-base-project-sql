@@ -40,7 +40,7 @@ class UserServices(BaseServices):
         if not user:
             raise UserErrorCode.Unauthorize()
         # Validate the provided password against the hashed value.
-        is_valid_password = await auth_services.validate_hash(value=password, hashed_value=user["password"])
+        is_valid_password = await auth_services.validate_hash(value=password, hashed_value=user.password)
         if not is_valid_password:
             raise UserErrorCode.Unauthorize()
         return user

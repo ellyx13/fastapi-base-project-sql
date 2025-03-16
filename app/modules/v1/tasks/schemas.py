@@ -10,12 +10,12 @@ class CreateRequest(BaseModel):
 
 
 class Response(BaseModel):
-    id: str = Field(alias="_id")
+    id: int
     summary: str
     description: Optional[str] = None
     status: str
     created_at: datetime
-    created_by: str
+    created_by: int
 
 
 class ListResponse(BaseModel):

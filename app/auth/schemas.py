@@ -1,7 +1,7 @@
 from typing import Optional
 
 from core.schemas import EmailStr, PhoneStr
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 from users import schemas as user_schemas
 from users.config import settings as user_settings
 from users.exceptions import UserErrorCode
@@ -28,4 +28,4 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(user_schemas.Response):
     access_token: str
-    token_type: str
+    token_type: str = "bearer"

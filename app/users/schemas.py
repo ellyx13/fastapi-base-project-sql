@@ -6,13 +6,12 @@ from pydantic import BaseModel, Field
 
 
 class Response(BaseModel):
-    id: str = Field(alias="_id")
+    id: int
     fullname: str
     email: EmailStr
     phone_number: Optional[PhoneStr] = None
     type: str
     created_at: datetime
-    created_by: str
 
 
 class ListResponse(BaseModel):
