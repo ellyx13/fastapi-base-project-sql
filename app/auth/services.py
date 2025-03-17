@@ -13,7 +13,7 @@ class AuthServices(BaseServices):
     def __init__(self, service_name: str, crud: BaseCRUD = None) -> None:
         super().__init__(service_name, crud)
 
-    async def create_access_token(self, user_id: str, user_type: str) -> dict:
+    async def create_access_token(self, user_id: int, user_type: str) -> dict:
         """
         Creates a JWT access token for the specified user.
 

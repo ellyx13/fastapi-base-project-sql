@@ -4,6 +4,7 @@ from typing import List, Union, Any, Optional, Dict
 from sqlalchemy import asc, desc
 import re
 import math
+from sqlalchemy.dialects import postgresql
 
 class BaseCRUD:
     """
@@ -257,7 +258,7 @@ class BaseCRUD:
         return True
     
     async def get_by_id(
-        self, session: AsyncSession, _id: int, fields_limit: Optional[List[str]] = None, query: Optional[Dict[str, Any]] = None
+        self, session: AsyncSession, _id: int, query: Optional[Dict[str, Any]] = None
     ) -> type[SQLModel] | None: 
         """
         Retrieves a record from the database based on its ID, with optional field limitations and additional query.
@@ -265,7 +266,6 @@ class BaseCRUD:
         Args:
             session (AsyncSession): The database session.
             _id (int): The ID of the record to be retrieved.
-            fields_limit (list, optional): List of field names to include in the result. If None, all fields are included.
             query (dict, optional): Additional query criteria to further refine the search.
 
         Returns:
@@ -273,8 +273,7 @@ class BaseCRUD:
         """
         filters = self.build_query_filters(_id=_id, query=query)
 
-        selected_fields = self.build_field_projection(fields_limit=fields_limit)
-        statement = select(*selected_fields).where(*filters)
+        statement = select(self.model).where(*filters)
         result = await session.exec(statement)
         record = result.one_or_none()
         if record:
@@ -287,7 +286,6 @@ class BaseCRUD:
         session: AsyncSession,
         data: str,
         field_name: str,
-        fields_limit: Optional[List[str]] = None,
         query: Optional[Dict[str, Any]] = None
     ) -> Optional[List[type[SQLModel]]]:
         """
@@ -297,7 +295,6 @@ class BaseCRUD:
             session (AsyncSession): The database session.
             data (str): The value to search for in the specified field.
             field_name (str): The name of the field to search in.
-            fields_limit (list, optional): List of field names to include in the result. If None, all fields are included.
             query (dict, optional): Additional query criteria to further refine the search.
 
         Returns:
@@ -312,8 +309,7 @@ class BaseCRUD:
                 if hasattr(self.model, key)
             ])
 
-        selected_fields = self.build_field_projection(fields_limit=fields_limit)
-        statement = select(*selected_fields).where(*filters)
+        statement = select(self.model).where(*filters)
         result = await session.exec(statement)
         records = result.all()
 
@@ -327,7 +323,6 @@ class BaseCRUD:
         search_in: Optional[List[str]] = None,
         page: Optional[int] = None,
         limit: Optional[int] = None,
-        fields_limit: Optional[List[str]] = None,
         sort_by: Optional[str] = None,
         order_by: Optional[str] = None,
     ) -> Dict[str, Any]:
@@ -341,7 +336,6 @@ class BaseCRUD:
             search_in (list, optional): A list of fields to search in if a search query is provided.
             page (int, optional): The page number for pagination.
             limit (int, optional): The number of documents per page.
-            fields_limit (list, optional): List of field names to include in the results.
             sort_by (str, optional): The field name to sort the results by.
             order_by (str, optional): The order to sort the results, either "asc" for ascending or "desc" for descending.
 
@@ -369,8 +363,7 @@ class BaseCRUD:
                 filters.append(func.or_(*search_conditions))
 
         # Build the base select statement
-        selected_fields = self.build_field_projection(fields_limit=fields_limit)
-        statement = select(*selected_fields).where(*filters)
+        statement = select(self.model).where(*filters)
 
         # Apply sorting
         if sort_by and hasattr(self.model, sort_by):

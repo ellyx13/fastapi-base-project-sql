@@ -4,7 +4,6 @@ from users.controllers import user_controllers
 from core.dependencies import CommonsDependencies
 from . import schemas
 from .services import auth_services
-from users.models import Users
 
 class AuthControllers(BaseControllers):
     def __init__(self, controller_name: str, service: BaseServices = None) -> None:

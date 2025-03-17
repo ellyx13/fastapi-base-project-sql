@@ -106,13 +106,12 @@ class BaseServices:
             query.update(ownership_query)
         return query
 
-    async def get_by_id(self, _id: int, commons: CommonsDependencies, fields_limit: list | str = None, ignore_error: bool = False, include_deleted: bool = False) -> SQLModel:
+    async def get_by_id(self, _id: int, commons: CommonsDependencies, ignore_error: bool = False, include_deleted: bool = False) -> SQLModel:
         """
         Retrieves a record by its ID.
 
         Args:
             _id (int): The ID of the record to retrieve.
-            fields_limit (list | str, optional): Fields to include in the response. Defaults to None.
             ignore_error (bool, optional): Whether to ignore errors if the record is not found. Defaults to False.
             include_deleted (bool, optional): Whether to include soft-deleted records. Defaults to False.
             commons (CommonsDependencies, optional): Common dependencies for the request. Defaults to None.
@@ -125,7 +124,7 @@ class BaseServices:
 
         """
         query = self._build_query(commons=commons, include_deleted=include_deleted)
-        item = await self.crud.get_by_id(session=commons.session, _id=_id, fields_limit=fields_limit, query=query)
+        item = await self.crud.get_by_id(session=commons.session, _id=_id, query=query)
         if not item and not ignore_error:
             raise CoreErrorCode.NotFound(service_name=self.service_name, item=_id)
         return item
@@ -138,7 +137,6 @@ class BaseServices:
         search_in: list = None,
         page: int = 1,
         limit: int = 20,
-        fields_limit: list | str = None,
         sort_by: str = "created_at",
         order_by: str = "desc",
         include_deleted: bool = False
@@ -152,7 +150,6 @@ class BaseServices:
             search_in (list, optional): A list of fields to search within. Defaults to None.
             page (int, optional): The page number for pagination. Defaults to 1.
             limit (int, optional): The number of records to retrieve per page. Defaults to 20.
-            fields_limit (list | str, optional): Fields to include in the response. Defaults to None.
             sort_by (str, optional): The field to sort the results by. Defaults to "created_at".
             order_by (str, optional): The sort order, either "asc" or "desc". Defaults to "desc".
             include_deleted (bool, optional): Whether to include soft-deleted records. Defaults to False.
@@ -168,14 +165,13 @@ class BaseServices:
         return item
 
     async def get_by_field(
-        self, data: str, field_name: str, commons: CommonsDependencies, fields_limit: list | str = None, ignore_error: bool = False, include_deleted: bool = False) -> list[SQLModel]:
+        self, data: str, field_name: str, commons: CommonsDependencies, ignore_error: bool = False, include_deleted: bool = False) -> list[SQLModel]:
         """
         Retrieves a record by a specific field value.
 
         Args:
             data (str): The value to search for within the specified field.
             field_name (str): The name of the field to search within.
-            fields_limit (list | str, optional): Fields to include in the response. Defaults to None.
             ignore_error (bool, optional): Whether to ignore errors if the record is not found. Defaults to False.
             include_deleted (bool, optional): Whether to include soft-deleted records. Defaults to False.
             commons (CommonsDependencies, optional): Common dependencies for the request. Defaults to None.
@@ -189,7 +185,7 @@ class BaseServices:
         """
         query = self._build_query(commons=commons, include_deleted=include_deleted)
 
-        items = await self.crud.get_by_field(session=commons.session, data=data, field_name=field_name, fields_limit=fields_limit, query=query)
+        items = await self.crud.get_by_field(session=commons.session, data=data, field_name=field_name, query=query)
         if not items and not ignore_error:
             raise CoreErrorCode.NotFound(service_name=self.service_name, item=data)
         return items
@@ -303,11 +299,12 @@ class BaseServices:
 
         """
         query = self._build_query(commons=commons, include_deleted=include_deleted)
+        item = await self.get_by_id(_id=_id, commons=commons, ignore_error=ignore_error, include_deleted=include_deleted)
         if check_modified:
-            is_modified = commons.session.is_modified(data)
+            is_modified = any(getattr(item, key) != value and key not in settings.fields_not_modified for key, value in data.model_dump(exclude_unset=True).items())
             if not is_modified:
                 if not ignore_error:
-                    raise CoreErrorCode.NotModified(service_name=self.service_name, item=_id)
+                    raise CoreErrorCode.NotModified(service_name=self.service_name)
                 return None
         if unique_field:
             await self._check_unique(data=data, unique_field=unique_field, ignore_error=ignore_error)

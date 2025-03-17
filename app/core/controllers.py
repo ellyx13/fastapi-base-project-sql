@@ -32,7 +32,6 @@ class BaseControllers:
         search_in: list = None,
         page: int = 1,
         limit: int = 20,
-        fields_limit: list | str = None,
         sort_by: str = "created_at",
         order_by: str = "desc",
         include_deleted: bool = False,
@@ -46,7 +45,6 @@ class BaseControllers:
             search_in=search_in,
             page=page,
             limit=limit,
-            fields_limit=fields_limit,
             sort_by=sort_by,
             order_by=order_by,
             include_deleted=include_deleted,
@@ -54,21 +52,21 @@ class BaseControllers:
         )
         return results
 
-    async def get_by_id(self, _id, fields_limit: list | str = None, ignore_error: bool = False, include_deleted: bool = False, commons: CommonsDependencies = None) -> dict:
+    async def get_by_id(self, _id: int, ignore_error: bool = False, include_deleted: bool = False, commons: CommonsDependencies = None) -> dict:
         if not isinstance(self.service, BaseServices):
             raise TypeError(NOT_DECLARED_SERVICE)
-        result = await self.service.get_by_id(_id=_id, fields_limit=fields_limit, ignore_error=ignore_error, include_deleted=include_deleted, commons=commons)
+        result = await self.service.get_by_id(_id=_id, ignore_error=ignore_error, include_deleted=include_deleted, commons=commons)
         return result
 
     async def get_by_field(
-        self, data: str, field_name: str, fields_limit: list | str = None, ignore_error: bool = False, include_deleted: bool = False, commons: CommonsDependencies = None
+        self, data: str, field_name: str, ignore_error: bool = False, include_deleted: bool = False, commons: CommonsDependencies = None
     ) -> list:
         if not isinstance(self.service, BaseServices):
             raise TypeError(NOT_DECLARED_SERVICE)
-        result = await self.service.get_by_field(data=data, field_name=field_name, fields_limit=fields_limit, ignore_error=ignore_error, include_deleted=include_deleted, commons=commons)
+        result = await self.service.get_by_field(data=data, field_name=field_name, ignore_error=ignore_error, include_deleted=include_deleted, commons=commons)
         return result
 
-    async def soft_delete_by_id(self, _id: str, ignore_error: bool = False, commons: CommonsDependencies = None) -> dict:
+    async def soft_delete_by_id(self, _id: int, ignore_error: bool = False, commons: CommonsDependencies = None) -> dict:
         if not isinstance(self.service, BaseServices):
             raise TypeError(NOT_DECLARED_SERVICE)
         result = await self.service.soft_delete_by_id(_id=_id, ignore_error=ignore_error, commons=commons)

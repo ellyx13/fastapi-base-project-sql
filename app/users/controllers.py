@@ -15,16 +15,18 @@ class UserControllers(BaseControllers):
     async def login(self, email: str, password: str, commons: CommonsDependencies) -> Users:
         return await self.service.login(email=email, password=password, commons=commons)
 
-    async def get_me(self, commons: CommonsDependencies, fields: str = None) -> Users:
+    async def get_me(self, commons: CommonsDependencies) -> Users:
         current_user_id = self.get_current_user(commons=commons)
-        return await self.get_by_id(_id=current_user_id, fields_limit=fields, commons=commons)
+        return await self.get_by_id(_id=current_user_id, commons=commons)
 
-    async def edit(self, _id: str, data: schemas.EditRequest, commons: CommonsDependencies) -> Users:
+    async def edit(self, _id: int, data: schemas.EditRequest, commons: CommonsDependencies) -> Users:
         # Check if that user id exists or not
         await self.get_by_id(_id=_id, commons=commons)
-        # Convert the Pydantic model 'data' to a dictionary, excluding any fields with None values.
-        data = data.model_dump(exclude_none=True)
         return await self.service.edit(_id=_id, data=data, commons=commons)
+    
+    async def edit_me(self, data: schemas.EditRequest, commons: CommonsDependencies) -> Users:
+        _id = self.get_current_user(commons=commons)
+        return await self.edit(_id=_id, data=data, commons=commons)
 
 
 user_controllers = UserControllers(controller_name="users", service=user_services)

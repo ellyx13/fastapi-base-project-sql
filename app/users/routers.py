@@ -1,6 +1,6 @@
 from auth.decoractor import access_control
 from core.dependencies import CommonsDependencies
-from core.schemas import ObjectIdStr, PaginationParams
+from core.schemas import PaginationParams
 from fastapi import Depends
 from fastapi_restful.cbv import cbv
 from fastapi_restful.inferring_router import InferringRouter
@@ -30,9 +30,15 @@ class RoutersCBV:
 
     @router.get("/users/me", status_code=200, responses={200: {"model": schemas.Response, "description": "Get users success"}})
     @access_control(public=False)
-    async def get_me(self, fields: str = None):
-        results = await user_controllers.get_me(commons=self.commons, fields=fields)
-        return schemas.Response(**results)
+    async def get_me(self):
+        result = await user_controllers.get_me(commons=self.commons)
+        return schemas.Response.model_validate(result, from_attributes=True)
+    
+    @router.put("/users/me", status_code=200, responses={200: {"model": schemas.Response, "description": "Update user success"}})
+    @access_control(public=False)
+    async def edit_me(self, data: schemas.EditRequest):
+        result = await user_controllers.edit_me(data=data, commons=self.commons)
+        return schemas.Response.model_validate(result, from_attributes=True)
 
     @router.get("/users", status_code=200, responses={200: {"model": schemas.ListResponse, "description": "Get users success"}})
     @access_control(admin=True, public=False)
@@ -44,30 +50,27 @@ class RoutersCBV:
             search_in=search_in,
             page=pagination.page,
             limit=pagination.limit,
-            fields_limit=pagination.fields,
             sort_by=pagination.sort_by,
             order_by=pagination.order_by,
             commons=self.commons,
         )
         if pagination.fields:
             return results
-        return schemas.ListResponse(**results)
+        return schemas.ListResponse.model_validate(results, from_attributes=True)
 
     @router.get("/users/{_id}", status_code=200, responses={200: {"model": schemas.Response, "description": "Get user success"}})
     @access_control(public=False)
-    async def get_detail(self, _id: ObjectIdStr, fields: str = None):
-        results = await user_controllers.get_by_id(_id=_id, fields_limit=fields, commons=self.commons)
-        if fields:
-            return results
-        return schemas.Response(**results)
+    async def get_detail(self, _id: int):
+        result = await user_controllers.get_by_id(_id=_id, commons=self.commons)
+        return schemas.Response.model_validate(result, from_attributes=True)
 
     @router.put("/users/{_id}", status_code=200, responses={200: {"model": schemas.Response, "description": "Update user success"}})
-    @access_control(public=False)
-    async def edit(self, _id: ObjectIdStr, data: schemas.EditRequest):
-        results = await user_controllers.edit(_id=_id, data=data, commons=self.commons)
-        return schemas.Response(**results)
+    @access_control(admin=True, public=False)
+    async def edit(self, _id: int, data: schemas.EditRequest):
+        result = await user_controllers.edit(_id=_id, data=data, commons=self.commons)
+        return schemas.Response.model_validate(result, from_attributes=True)
 
     @router.delete("/users/{_id}", status_code=204)
     @access_control(admin=True, public=False)
-    async def delete(self, _id: ObjectIdStr):
+    async def delete(self, _id: int):
         await user_controllers.soft_delete_by_id(_id=_id, commons=self.commons)

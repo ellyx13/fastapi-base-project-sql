@@ -40,7 +40,6 @@ class PaginationParams:
         search: str = Query(None, description="Anything you want"),
         page: int = Query(default=1, gt=0),
         limit: int = Query(default=20, gt=0),
-        fields: str = None,
         sort_by: str = Query("created_at", description="Anything you want"),
         order_by: OrderBy = Query(OrderBy.DECREASE.value, description="desc: Descending | asc: Ascending"),
     ):
@@ -48,28 +47,8 @@ class PaginationParams:
         self.search = search
         self.page = page
         self.limit = limit
-        self.fields = fields
         self.sort_by = sort_by
-        self.order_by = order_by.value
-
-
-def check_object_id(value: str) -> str:
-    """
-    Validates whether a given string is a valid ObjectId.
-
-    Args:
-        value (str): The string to validate as an ObjectId.
-
-    Returns:
-        str: The validated ObjectId string.
-
-    Raises:
-        CoreErrorCode.InvalidObjectId: If the string is not a valid ObjectId.
-    """
-    if validator.check_object_id(_id=value):
-        return value
-    raise CoreErrorCode.InvalidObjectId(_id=value)
-
+        self.order_by = order_by
 
 def check_email(value: str) -> str:
     """
@@ -128,7 +107,6 @@ def check_date_format(value: str) -> str:
         raise CoreErrorCode.InvalidDate(date=value)
 
 
-ObjectIdStr = Annotated[str, AfterValidator(check_object_id)]
 EmailStr = Annotated[str, AfterValidator(check_email)]
 PhoneStr = Annotated[str, AfterValidator(check_phone)]
 DateStr = Annotated[str, AfterValidator(check_date_format)]

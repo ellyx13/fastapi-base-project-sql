@@ -20,9 +20,11 @@ class RoutersCBV:
     @router.post("/auth/register", status_code=201, responses={201: {"model": schemas.LoginResponse, "description": "Register user success"}})
     @access_control(public=True)
     async def register(self, data: schemas.RegisterRequest):
-        return await auth_controllers.register_user(data=data, commons=self.commons)
+        result = await auth_controllers.register_user(data=data, commons=self.commons)
+        return schemas.LoginResponse.model_validate(result)
 
     @router.post("/auth/login", status_code=201, responses={201: {"model": schemas.LoginResponse, "description": "Register user success"}})
     @access_control(public=True)
     async def login(self, data: schemas.LoginRequest):
-        return await auth_controllers.login_user(data=data, commons=self.commons)
+        result = await auth_controllers.login_user(data=data, commons=self.commons)
+        return schemas.LoginResponse.model_validate(result)

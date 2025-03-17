@@ -23,8 +23,8 @@ class UserServices(BaseServices):
         data = Users(fullname=fullname, email=email, password=password)
         if phone_number:
             data.phone_number = phone_number
-        if commons.current_user:
-            data.created_by = commons.current_user
+        if self.get_current_user(commons=commons):
+            data.created_by = self.get_current_user(commons=commons)
         # Set the user role to 'USER' by default.
         data.type = value.UserRoles.USER.value
         # Add the current datetime as the creation time. 
@@ -33,7 +33,11 @@ class UserServices(BaseServices):
         data.password = await auth_services.hash(value=data.password)
         # Save the user, ensuring the email is unique, using the save_unique function.
         user = await self.save_unique(data=data, unique_field="email", commons=commons)
-        return user
+        
+        if self.get_current_user(commons=commons) is None: 
+            data_update = Users(created_by=user.id)
+            user = await self.update_by_id(_id=user.id, data=data_update, commons=commons)
+        return user 
 
     async def login(self, email: str, password: str, commons: CommonsDependencies) -> Users:
         user = await self.get_by_email(email=email, commons=commons, ignore_error=True)
@@ -45,14 +49,14 @@ class UserServices(BaseServices):
             raise UserErrorCode.Unauthorize()
         return user
 
-    async def edit(self, _id: int, data: Users, commons: CommonsDependencies) -> Users:
-        data.updated_at = self.get_current_datetime()
-        data.updated_by = self.get_current_user(commons=commons)
+    async def edit(self, _id: int, data: schemas.EditRequest | Users, commons: CommonsDependencies) -> Users:
+        user = Users(**data.model_dump(exclude_none=True))
+        user.updated_at = self.get_current_datetime()
+        user.updated_by = self.get_current_user(commons=commons)
         return await self.update_by_id(_id=_id, data=data, commons=commons)
 
     async def grant_admin(self, _id: int, commons: CommonsDependencies) -> Users:
-        user = await self.get_by_id(_id=_id, commons=commons)
-        user.type = value.UserRoles.ADMIN.value
+        user = Users(type=value.UserRoles.ADMIN.value)
         return await self.edit(_id=_id, data=user, commons=commons)  
 
     async def create_admin(self, session:AsyncSession):
@@ -61,7 +65,6 @@ class UserServices(BaseServices):
         if admin:
             return admin
         admin = await self.register(fullname="Admin", email=settings.default_admin_email, password=settings.default_admin_password, commons=commons)
-        print("Admin: ", admin) 
         return await self.grant_admin(_id=admin.id, commons=commons)
 
 

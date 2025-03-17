@@ -4,7 +4,7 @@ from exceptions import CustomException
 class CoreErrorCode:
     @staticmethod
     def NotFound(service_name: str, item: str):
-        return CustomException(type=f"{service_name}/warning/not-found", status=404, title="Not found.", detail=f"{service_name.capitalize()} with {item} could not be found.")
+        return CustomException(type=f"{service_name}/warning/not-found", status=404, title="Not found.", detail=f"{service_name.capitalize()} {item} could not be found.")
 
     @staticmethod
     def NotModified(service_name: str):
@@ -13,12 +13,6 @@ class CoreErrorCode:
     @staticmethod
     def Conflict(service_name: str, item: str):
         return CustomException(type=f"{service_name}/warning/conflict", status=409, title="Conflict.", detail=f"The {item} data already exists. Please provide other data and try again.")
-
-    @staticmethod
-    def InvalidObjectId(_id: str):
-        return CustomException(
-            type="core/info/invalid-object-id", status=400, title="Invalid ID format.", detail=f"The id {_id} is not a valid object id. Please provide a valid object id and try again."
-        )
 
     @staticmethod
     def InvalidEmail(email: str):

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from core.schemas import EmailStr, PhoneStr
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict
 
 
 class Response(BaseModel):
@@ -27,5 +27,6 @@ class LoginResponse(Response):
 
 
 class EditRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
     fullname: Optional[str] = None
     phone_number: Optional[PhoneStr] = None
