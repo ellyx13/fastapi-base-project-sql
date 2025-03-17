@@ -4,7 +4,6 @@ from typing import List, Union, Any, Optional, Dict
 from sqlalchemy import asc, desc
 import re
 import math
-from sqlalchemy.dialects import postgresql
 
 class BaseCRUD:
     """
