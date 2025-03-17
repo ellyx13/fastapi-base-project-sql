@@ -1,11 +1,13 @@
 from datetime import datetime
 from typing import Literal, Optional
 
-from core.schemas import EmailStr, ObjectIdStr, PhoneStr
+from core.schemas import EmailStr, PhoneStr
 from sqlmodel import Field, SQLModel, String
+from pydantic import ConfigDict
 
 
 class Users(SQLModel, table=True):
+    model_config = ConfigDict(extra="allow")
     id: int = Field(primary_key=True)
     fullname: str
     email: EmailStr = Field(index=True, unique=True)
