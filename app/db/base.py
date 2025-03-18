@@ -36,32 +36,6 @@ class BaseCRUD:
         result = await session.exec(statement)
         return len(result.all())
 
-    def build_field_projection(self, fields_limit: Union[List[str], str, None] = None) -> List[Any]:
-        """
-        Constructs a list of SQLModel fields to be selected dynamically.
-
-        Args:
-            fields_limit (list | str | None): A list or comma-separated string of field names.
-                                              For example, ["name", "age"] or "name,age".
-
-        Returns:
-            List[Any]: A list of SQLModel fields to be used in select statements.
-        """
-        if not fields_limit:
-            return [self.model]  # Return the entire model if no fields are specified
-
-        # Convert string input to list if necessary
-        if isinstance(fields_limit, str):
-            fields_limit = [field.strip() for field in fields_limit.split(",")]
-
-        # Extract valid fields from the model
-        valid_fields = [getattr(self.model, field) for field in fields_limit if hasattr(self.model, field)]
-
-        if not valid_fields:
-            raise ValueError("No valid fields provided for selection.")
-
-        return valid_fields
-
     def convert_bools(self, value: Union[dict, list, str, Any]) -> Union[dict, list, str, Any]:
         """
         Converts string representations of booleans ("true" or "false") to actual boolean values (True, False) in a given data structure.

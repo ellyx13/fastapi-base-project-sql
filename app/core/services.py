@@ -161,7 +161,7 @@ class BaseServices:
         """
         query = self._build_query(commons=commons, query=query, include_deleted=include_deleted)
 
-        item = await self.crud.get_all(session=commons.session, query=query, search=search, search_in=search_in, page=page, limit=limit, fields_limit=fields_limit, sort_by=sort_by, order_by=order_by)
+        item = await self.crud.get_all(session=commons.session, query=query, search=search, search_in=search_in, page=page, limit=limit, sort_by=sort_by, order_by=order_by)
         return item
 
     async def get_by_field(
@@ -347,7 +347,7 @@ class BaseServices:
         Returns:
             dict: The updated record with the soft delete information.
         """
-        if getattr(self.crud.model(), "deleted_at", None) is None or getattr(self.crud.model(), "deleted_by", None) is None:
+        if getattr(self.crud.model, "deleted_at", None) is None or getattr(self.crud.model, "deleted_by", None) is None:
             raise AttributeError("The model must have a 'deleted_at' field to support soft deletions")
         data = self.crud.model()
         data.deleted_at = self.get_current_datetime()

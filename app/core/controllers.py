@@ -1,6 +1,8 @@
 from core.dependencies import CommonsDependencies
-
 from .services import BaseServices
+from typing import Type
+from pydantic import BaseModel
+from sqlmodel import SQLModel
 
 NOT_DECLARED_SERVICE = "Service must be an instance of BaseServices. Maybe the service has not been declared when creating the class Controllers"
 
@@ -77,3 +79,24 @@ class BaseControllers:
 
     def get_current_user_type(self, commons: CommonsDependencies):
         return commons.user_type
+
+    def convert_orm_to_schema(self, schema: Type[BaseModel], data: SQLModel, extra_data: dict = None) -> BaseModel:
+        """
+        Converts an ORM model (`SQLModel`) into a Pydantic schema (`BaseModel`), ensuring missing fields 
+        are handled properly and allowing additional fields to be added dynamically.
+
+        Args:
+            schema (Type[BaseModel]): The target Pydantic schema to validate the data.
+            data (SQLModel): The ORM model instance retrieved from the database.
+            extra_data (dict, optional): Additional key-value pairs to update the schema with.
+
+        Returns:
+            BaseModel: An instance of the schema containing the original data and extra fields.
+        """
+        # Convert ORM model to dictionary, excluding unset (None) fields
+        data_dict = data.model_dump()
+        # Merge extra data if provided
+        if extra_data:
+            data_dict.update(extra_data)
+        # Validate the dictionary and return a Pydantic schema instance
+        return schema.model_validate(data_dict)
