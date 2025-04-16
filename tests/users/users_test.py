@@ -31,7 +31,7 @@ async def test_get_me(client: AsyncClient):
 @pytest.mark.asyncio(scope="session")
 async def test_user_detail(client: AsyncClient):
     user = await test_user_login(client)
-    user_id = user["_id"]
+    user_id = user["id"]
     headers = {"Authorization": f"Bearer {user['access_token']}"}
     response = await client.get(f"v1/users/{user_id}", headers=headers)
     assert response.status_code == 200
@@ -40,7 +40,7 @@ async def test_user_detail(client: AsyncClient):
 @pytest.mark.asyncio(scope="session")
 async def test_user_edit(client: AsyncClient):
     user = await test_user_login(client)
-    user_id = user["_id"]
+    user_id = user["id"]
     headers = {"Authorization": f"Bearer {user['access_token']}"}
     payload = {"fullname": "new_name"}
     response = await client.put(f"v1/users/{user_id}", headers=headers, json=payload)

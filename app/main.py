@@ -18,6 +18,7 @@ from db.engine import db_engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("Starting FastAPI Base Project...")
     await db_engine.create_db_and_tables()
     async for session in db_engine.get_session():
         await user_services.create_admin(session=session)

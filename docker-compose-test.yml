@@ -1,6 +1,8 @@
 services:
   api-test:
-    build: ./app
+    build:
+      context: ./app
+      dockerfile: Dockerfile.test
     restart: always
     command: pytest ./tests/
     volumes:
@@ -17,11 +19,12 @@ services:
       - db-test
 
   db-test:
-    image: mongo
+    image: postgres:17.4
     restart: always
-    command: --quiet
+    env_file:
+      - ./.env/db.test.env
     healthcheck:
-      test: echo 'db.runCommand({serverStatus:1}).ok' | mongosh admin --quiet | grep 1
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
       interval: 60s
       timeout: 60s
       retries: 6

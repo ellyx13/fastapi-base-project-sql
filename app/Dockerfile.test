@@ -22,11 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Copy only dependency files first (for better layer caching)
-COPY pyproject.toml requirements.lock ./
+COPY pyproject.toml requirements.test.lock ./
 
 # Create and install dependencies into venv
 RUN uv venv /opt/venv \
-    && uv pip install -r requirements.lock
+    && uv pip install -r requirements.test.lock
 
 # ==========================
 # Final Stage
