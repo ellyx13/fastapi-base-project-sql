@@ -7,7 +7,7 @@ services:
       - ./app/:/opt/projects/app/
       - ./logs/:/opt/projects/app/logs
     ports:
-      - 127.0.0.1:8005:8001
+      - 127.0.0.1:8001:8001
     env_file:
       - ./.env/dev.env
     healthcheck:

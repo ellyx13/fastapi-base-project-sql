@@ -9,9 +9,21 @@ from sqlmodel import SQLModel
 from .config import settings
 from .exceptions import CoreErrorCode
 from .dependencies import CommonsDependencies
-from typing import Any, Dict
+from typing import Generic, List, Type, TypeVar, Union, Any, Dict
 
-class BaseServices:
+TModel = TypeVar("TModel", bound=BaseModel)
+
+
+# This class is used to define the structure of the response when retrieving all records. Why I put class here?
+# Because it is a generic class that can be used to define the structure of the response for any model.
+class GetAllModel(BaseModel):
+    total_items: int
+    total_pages: int
+    records_per_page: int
+    results: List[BaseModel]
+
+
+class BaseServices(Generic[TModel]):
     """
     A base service class that provides common CRUD operations and utilities for interacting with the database.
 
@@ -29,12 +41,15 @@ class BaseServices:
 
     """
 
-    def __init__(self, service_name: str, crud: BaseCRUD = None) -> None:
+    def __init__(self, service_name: str, crud: BaseCRUD = None, model: Type[TModel] = None) -> None:
         self.service_name = service_name
         self.ownership_field = settings.ownership_field
         if crud and root_settings.is_production() and isinstance(crud, BaseCRUD) is False:
             raise ValueError(f"The 'crud' attribute must be a BaseCRUD instance for {self.service_name} service.")
+        if model and isinstance(model, ModelMetaclass) is False:
+            raise ValueError(f"The 'model' attribute must be a Pydantic Model for {self.service_name} service.")
         self.crud = crud
+        self.model = model
 
     def get_current_datetime(self) -> datetime:
         """
@@ -140,7 +155,7 @@ class BaseServices:
         sort_by: str = "created_at",
         order_by: str = "desc",
         include_deleted: bool = False
-    ) -> dict:
+    ) -> GetAllModel:
         """
         Retrieves all records based on the provided query parameters.
 
@@ -156,13 +171,13 @@ class BaseServices:
             commons (CommonsDependencies, optional): Common dependencies for the request. Defaults to None.
 
         Returns:
-            dict: A dictionary containing the retrieved records and additional metadata.
+            GetAllModel: A dictionary containing the retrieved records and additional metadata.
 
         """
         query = self._build_query(commons=commons, query=query, include_deleted=include_deleted)
 
-        item = await self.crud.get_all(session=commons.session, query=query, search=search, search_in=search_in, page=page, limit=limit, sort_by=sort_by, order_by=order_by)
-        return item
+        results = await self.crud.get_all(session=commons.session, query=query, search=search, search_in=search_in, page=page, limit=limit, sort_by=sort_by, order_by=order_by)
+        return GetAllModel(total_items=results["total_items"], total_pages=results["total_pages"], records_per_page=results["records_per_page"], results=results["results"])
 
     async def get_by_field(
         self, data: str, field_name: str, commons: CommonsDependencies, ignore_error: bool = False, include_deleted: bool = False) -> list[SQLModel]:
@@ -221,12 +236,12 @@ class BaseServices:
         first_item = next(iter(query.values()))
         raise CoreErrorCode.Conflict(service_name=self.service_name, item=first_item)
 
-    async def save(self, data: SQLModel, commons: CommonsDependencies) -> SQLModel:
+    async def save(self, data: TModel, commons: CommonsDependencies) -> TModel:
         """
         Saves a new record to the database.
 
         Args:
-            data (SQLModel): The data to be saved.
+            data (TModel): The data to be saved.
 
         Returns:
             dict: The saved record, retrieved by its ID.
@@ -234,12 +249,12 @@ class BaseServices:
         result = await self.crud.save(session=commons.session, data=data)
         return result
 
-    async def save_many(self, data: list[SQLModel], commons: CommonsDependencies) -> list[SQLModel]:
+    async def save_many(self, data: list[TModel], commons: CommonsDependencies) -> list[TModel]:
         """
         Saves multiple records to the database.
 
         Args:
-            data (list[SQLModel]): A list of dictionaries, each representing a record to be saved.
+            data (list[TModel]): A list of dictionaries, each representing a record to be saved.
 
         Returns:
             list[dict]: A list of saved records, each retrieved by its ID.
@@ -248,17 +263,17 @@ class BaseServices:
         results = await self.crud.save_many(session=commons.session, data=data)
         return results
     
-    async def save_unique(self, data: SQLModel, unique_field: str | list, commons: CommonsDependencies, ignore_error: bool = False) -> bool | SQLModel:
+    async def save_unique(self, data: TModel, unique_field: str | list, commons: CommonsDependencies, ignore_error: bool = False) -> bool | TModel:
         """
         Saves a new record to the database, ensuring that specified fields are unique. 
 
         Args:
-            data (SQLModel): The data to be saved.
+            data (TModel): The data to be saved.
             unique_field (str | list): The field or fields that must be unique in the database.
             ignore_error (bool, optional): Whether to ignore errors if a conflict is found. Defaults to False.
 
         Returns:
-            bool | SQLModel: The saved record, retrieved by its ID.
+            bool | TModel: The saved record, retrieved by its ID.
 
         Raises:
             CoreErrorCode.Conflict: If a conflict is detected and `ignore_error` is False.
@@ -275,14 +290,38 @@ class BaseServices:
                 raise CoreErrorCode.Conflict(service_name=self.service_name, item=unique_value)
         return result
 
+    async def _check_modified(self, old_data: TModel, new_data: TModel, ignore_error: bool) -> bool:
+        """
+        Checks if the new data is different from the old data.
+        Args:
+            old_data (TModel): The old data to compare against.
+            new_data (TModel): The new data to compare.
+            ignore_error (bool): Whether to ignore errors if the data is not modified.
+        Returns:
+            bool: True if the data is modified, False otherwise.
+        """
+        for field in new_data.model_fields:
+            if field in ["updated_at", "updated_by"] or getattr(new_data, field) is None:
+                continue
+
+            new_val = getattr(new_data, field, None)
+            old_val = getattr(old_data, field, None)
+
+            if new_val != old_val:
+                return True
+
+        if ignore_error:
+            return False
+        raise CoreErrorCode.NotModified(service_name=self.service_name)
+    
     async def update_by_id(
-        self, _id: int, data: SQLModel, commons: CommonsDependencies, unique_field: str | list = None, check_modified: bool = True, ignore_error: bool = False, include_deleted: bool = False) -> SQLModel | None:
+        self, _id: int, data: TModel, commons: CommonsDependencies, unique_field: str | list = None, check_modified: bool = True, ignore_error: bool = False, include_deleted: bool = False) -> TModel | None:
         """
         Updates a record by its ID.
 
         Args:
             _id (int): The ID of the record to update.
-            data (SQLModel): The new data to update the record with.
+            data (TModel): The new data to update the record with.
             unique_field (str | list, optional): The field or fields that must be unique in the database. Defaults to None.
             check_modified (bool, optional): Whether to check if the data has been modified before updating. Defaults to True.
             ignore_error (bool, optional): Whether to ignore errors if the record is not found or not modified. Defaults to False.
@@ -290,7 +329,7 @@ class BaseServices:
             commons (CommonsDependencies, optional): Common dependencies for the request. Defaults to None.
 
         Returns:
-            SQLModel | None: The updated record, or None if `ignore_error` is True and the record is not found.
+            TModel | None: The updated record, or None if `ignore_error` is True and the record is not found.
 
         Raises:
             CoreErrorCode.NotFound: If the record is not found and `ignore_error` is False.
@@ -301,11 +340,7 @@ class BaseServices:
         query = self._build_query(commons=commons, include_deleted=include_deleted)
         item = await self.get_by_id(_id=_id, commons=commons, ignore_error=ignore_error, include_deleted=include_deleted)
         if check_modified:
-            is_modified = any(getattr(item, key) != value and key not in settings.fields_not_modified for key, value in data.model_dump(exclude_unset=True).items())
-            if not is_modified:
-                if not ignore_error:
-                    raise CoreErrorCode.NotModified(service_name=self.service_name)
-                return None
+            await self._check_modified(old_data=item, new_data=data, ignore_error=ignore_error)
         if unique_field:
             await self._check_unique(data=data, unique_field=unique_field, ignore_error=ignore_error)
         return await self.crud.update_by_id(session=commons.session, _id=_id, data=data, query=query)
@@ -335,7 +370,7 @@ class BaseServices:
             return False
         return result
 
-    async def soft_delete_by_id(self, _id: int, commons: CommonsDependencies, ignore_error: bool = False) -> SQLModel:
+    async def soft_delete_by_id(self, _id: int, commons: CommonsDependencies, ignore_error: bool = False) -> TModel:
         """
         Soft deletes a record by its ID.
 

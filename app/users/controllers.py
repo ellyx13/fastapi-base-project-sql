@@ -1,13 +1,12 @@
 from core.controllers import BaseControllers
 from core.dependencies import CommonsDependencies
-from core.services import BaseServices
 from . import schemas
-from .services import user_services
+from .services import user_services, UserServices
 from .models import Users
 
-class UserControllers(BaseControllers):
-    def __init__(self, controller_name: str, service: BaseServices = None) -> None:
-        super().__init__(controller_name, service)
+class UserControllers(BaseControllers[UserServices]):
+    def __init__(self) -> None:
+        super().__init__(controller_name="users", service=user_services)
 
     async def register(self, fullname: str, email: str, password: str, commons: CommonsDependencies, phone_number: str = None) -> Users:
         return await self.service.register(fullname=fullname, email=email, password=password, phone_number=phone_number, commons=commons)
@@ -29,4 +28,4 @@ class UserControllers(BaseControllers):
         return await self.edit(_id=_id, data=data, commons=commons)
 
 
-user_controllers = UserControllers(controller_name="users", service=user_services)
+user_controllers = UserControllers()

@@ -1,13 +1,14 @@
 from core.dependencies import CommonsDependencies
 from .services import BaseServices
-from typing import Type
+from typing import Type, TypeVar, Generic
 from pydantic import BaseModel
 from sqlmodel import SQLModel
 
 NOT_DECLARED_SERVICE = "Service must be an instance of BaseServices. Maybe the service has not been declared when creating the class Controllers"
 
+TService = TypeVar("TService")
 
-class BaseControllers:
+class BaseControllers(Generic[TService]):
     """
     A base class for controllers that provides common methods for interacting with services.
 
@@ -23,7 +24,7 @@ class BaseControllers:
         service (BaseServices): The service instance used for performing operations.
     """
 
-    def __init__(self, controller_name: str, service: BaseServices = None) -> None:
+    def __init__(self, controller_name: str, service: TService = None) -> None:
         self.controller_name = controller_name
         self.service = service
 
